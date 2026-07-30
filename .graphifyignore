@@ -1,0 +1,15 @@
+.git/
+.gradle/
+.idea/
+**/build/
+graphify-out/
+evidence/
+docs/images/
+.firebase/
+local.properties
+google-services.json
+*.jks
+*.keystore
+*.password
+*.env
+.env.*
