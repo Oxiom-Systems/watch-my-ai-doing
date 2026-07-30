@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "demo": "demo-watch-my-ai-doing",
+    "production": "watch-my-ai-doing"
+  }
+}
