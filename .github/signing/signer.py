@@ -1,7 +1,7 @@
 """Sign verified APK/AAB data with official tools; never execute application code."""
 import argparse,base64,hashlib,json,os,re,shutil,subprocess,tempfile,zipfile
 from pathlib import Path
-from verify_artifact import Refused,verify
+from verify_artifact import Refused,verify,bounded_directory
 FILES=['WMAID-phone-unsigned.apk','WMAID-watch-unsigned.apk','WMAID-phone-unsigned.aab','WMAID-watch-unsigned.aab']
 ROOT=Path(os.environ.get('RUNNER_TEMP','/tmp'))/'wmaid-artifact-signing'
 TOOLS=Path('/tmp/wmaid-sign-tools')
@@ -30,6 +30,7 @@ def check_manifest(actual,text):
  require(parsed==actual,'unsigned checksum bytes');return actual
 SIG=re.compile(r'^META-INF/(?:MANIFEST\.MF|[^/]+\.(?:SF|RSA|DSA|EC))$',re.I)
 def payload(path,unsigned=False):
+ bounded_directory(path)
  result={};total=0
  with zipfile.ZipFile(path) as z:
   require(len(z.infolist())<=10000,'Android ZIP entry bound')

@@ -24,6 +24,17 @@ class SigningRoute(unittest.TestCase):
   c=j['steps'][0]['with'];self.assertRegex(c['ref'],r'^[a-f0-9]{40}$');self.assertFalse(c['persist-credentials']);self.assertFalse(c['sparse-checkout-cone-mode']);self.assertTrue(all(p.startswith('/.github/signing/') for p in c['sparse-checkout'].splitlines()))
   expected={'WMAID_DEMO_KEYSTORE_BASE64','WMAID_DEMO_KEYSTORE_PASSWORD','WMAID_DEMO_KEY_ALIAS','WMAID_DEMO_KEY_PASSWORD'};self.assertEqual(set(re.findall(r'secrets\.([A-Z0-9_]+)',str(j))),expected)
   secretsteps=[s for s in j['steps'] if 'secrets.' in str(s)];self.assertEqual(len(secretsteps),1);self.assertIn(' sign',secretsteps[0]['run']);self.assertNotIn('gradlew',str(j));self.assertNotIn('setup-gradle',str(j));self.assertNotIn('inherit',str(j))
+ def test_sparse_oversized_inner_directory_refuses_before_zipfile_construction(self):
+  import signer,struct,tempfile
+  from unittest.mock import patch
+  from verify_artifact import Refused
+  with tempfile.TemporaryDirectory() as td:
+   path=Path(td)/'malformed.aab';length=64*1024**2
+   with path.open('wb') as f:
+    f.seek(length);f.write(struct.pack('<4s4H2LH',b'PK\x05\x06',0,0,1,1,length,0,0))
+   with patch.object(signer.zipfile,'ZipFile',wraps=signer.zipfile.ZipFile) as parser:
+    with self.assertRaises((Refused,signer.zipfile.BadZipFile)):signer.payload(path)
+    parser.assert_not_called()
  def test_release_preserves_manual_optin_tag_and_original_assets(self):
   source=(ROOT/'.github/signing/signer.py').read_text();self.assertIn('showcase-',source);self.assertIn('WMAID-phone.apk',source);self.assertIn('WMAID-watch.apk',source);self.assertIn('SHA256SUMS.txt',source)
   caller=(ROOT/'.github/workflows/manual-build.yml').read_text();self.assertIn('publish_release',caller);self.assertIn('needs: build',caller);self.assertIn('ci-sign-recipe.yml@',caller)
