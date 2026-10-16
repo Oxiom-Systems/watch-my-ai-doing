@@ -1,6 +1,10 @@
 name: Manual Android build
 
 on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
   workflow_dispatch:
     inputs:
       publish_release:
@@ -13,6 +17,8 @@ permissions:
   contents: read
 
 jobs:
+  build:
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-build-recipe.yml@70b0e9c5f8b3bff898685ebddd664966d3c1732f
   sign-and-publish-held:
     if: github.event_name == 'workflow_dispatch'
     permissions:
