@@ -19,10 +19,10 @@ class SigningRoute(unittest.TestCase):
    with self.subTest(key=key),self.assertRaises(signer.Held):signer.identity({**proof,key:value},context)
  def test_signer_leaf_only_immutable_helpers_and_four_production_secret_names(self):
   import yaml
-  d=yaml.safe_load((ROOT/'.github/workflows/ci-sign-recipe.yml').read_text());j=d['jobs']['sign'];self.assertEqual(j['environment'],'production');self.assertEqual(j['runs-on']['group'],'ci-publish-public-ephemeral');self.assertEqual(j['runs-on']['labels'],['ci-linux-publish-v1-r1317333090'])
+  d=yaml.safe_load((ROOT/'.github/workflows/ci-sign-recipe.yml').read_text());j=d['jobs']['sign'];self.assertEqual(j['environment'],'production');self.assertEqual(j['runs-on']['group'],'ci-publish-ephemeral');self.assertEqual(j['runs-on']['labels'],['ci-linux-publish-v1-r1317333090'])
   self.assertIn('refs/heads/main',j['if']);self.assertIn('workflow_dispatch',j['if']);self.assertIn('github.ref_protected == true',j['if']);self.assertIn("github.repository_id == '1317333090'",j['if'])
   c=j['steps'][0]['with'];self.assertRegex(c['ref'],r'^[a-f0-9]{40}$');self.assertFalse(c['persist-credentials']);self.assertFalse(c['sparse-checkout-cone-mode']);self.assertTrue(all(p.startswith('/.github/signing/') for p in c['sparse-checkout'].splitlines()))
-  expected={'WMAID_DEMO_KEYSTORE_BASE64','WMAID_DEMO_KEYSTORE_PASSWORD','WMAID_DEMO_KEY_ALIAS','WMAID_DEMO_KEY_PASSWORD'};self.assertEqual(set(re.findall(r'secrets\.([A-Z_]+)',str(j))),expected)
+  expected={'WMAID_DEMO_KEYSTORE_BASE64','WMAID_DEMO_KEYSTORE_PASSWORD','WMAID_DEMO_KEY_ALIAS','WMAID_DEMO_KEY_PASSWORD'};self.assertEqual(set(re.findall(r'secrets\.([A-Z0-9_]+)',str(j))),expected)
   secretsteps=[s for s in j['steps'] if 'secrets.' in str(s)];self.assertEqual(len(secretsteps),1);self.assertIn(' sign',secretsteps[0]['run']);self.assertNotIn('gradlew',str(j));self.assertNotIn('setup-gradle',str(j));self.assertNotIn('inherit',str(j))
  def test_release_preserves_manual_optin_tag_and_original_assets(self):
   source=(ROOT/'.github/signing/signer.py').read_text();self.assertIn('showcase-',source);self.assertIn('WMAID-phone.apk',source);self.assertIn('WMAID-watch.apk',source);self.assertIn('SHA256SUMS.txt',source)

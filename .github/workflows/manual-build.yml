@@ -18,72 +18,16 @@ permissions:
 
 jobs:
   build:
-    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-build-recipe.yml@70b0e9c5f8b3bff898685ebddd664966d3c1732f
-  sign-and-publish-held:
-    if: github.event_name == 'workflow_dispatch'
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-build-recipe.yml@7e3f7b10a2d997fa1089551b62e243841008db20
+  sign-and-publish:
+    needs: build
+    if: github.repository_id == '1317333090' && github.ref_protected == true && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
-    name: Build phone and watch APKs
-    # Signing is held until the separate authority and artifact verifier are proven.
-    runs-on: [ci-android-signing-held]
-    timeout-minutes: 5
-    environment: production
-
-    steps:
-      - name: Check out source
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Set up Java
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
-
-      - name: Restore signing key
-        env:
-          KEYSTORE_BASE64: ${{ secrets.WMAID_DEMO_KEYSTORE_BASE64 }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/wmaid-signing"
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/wmaid-signing/demo-release.jks"
-
-      - name: Build signed release APKs
-        env:
-          WMAID_KEYSTORE_FILE: ${{ runner.temp }}/wmaid-signing/demo-release.jks
-          WMAID_KEYSTORE_PASSWORD: ${{ secrets.WMAID_DEMO_KEYSTORE_PASSWORD }}
-          WMAID_KEY_ALIAS: ${{ secrets.WMAID_DEMO_KEY_ALIAS }}
-          WMAID_KEY_PASSWORD: ${{ secrets.WMAID_DEMO_KEY_PASSWORD }}
-        run: ./gradlew clean :phone:assembleRelease :wear:assembleRelease
-
-      - name: Prepare artifacts
-        run: |
-          mkdir -p dist
-          cp phone/build/outputs/apk/release/phone-release.apk dist/WMAID-phone.apk
-          cp wear/build/outputs/apk/release/wear-release.apk dist/WMAID-watch.apk
-          cd dist
-          sha256sum WMAID-phone.apk WMAID-watch.apk > SHA256SUMS.txt
-
-      - name: Upload workflow artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: wmaid-signed-apks-${{ github.run_number }}
-          path: dist/
-          retention-days: 14
-
-      - name: Publish opt-in prerelease
-        if: ${{ inputs.publish_release }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "showcase-${GITHUB_RUN_NUMBER}" \
-            dist/WMAID-phone.apk \
-            dist/WMAID-watch.apk \
-            dist/SHA256SUMS.txt \
-            --prerelease \
-            --title "WMAID showcase ${GITHUB_RUN_NUMBER}" \
-            --notes "Manually published emulator-first showcase APKs. These are not a Play Store production release."
+      actions: read
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-sign-recipe.yml@cc02d0eca3b6e7609f7fcff23e6ae5ffef9c9e60
+    with:
+      producer_run_id: ${{ github.run_id }}
+      producer_attempt: ${{ github.run_attempt }}
+      artifact_id: ${{ needs.build.outputs.artifact-id }}
+      publish_release: ${{ inputs.publish_release }}
