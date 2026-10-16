@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: write
       actions: read
-    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-sign-recipe.yml@cc02d0eca3b6e7609f7fcff23e6ae5ffef9c9e60
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-sign-recipe.yml@378b75250669e543e740588cbfec89a68aa4070e
     with:
       producer_run_id: ${{ github.run_id }}
       producer_attempt: ${{ github.run_attempt }}
