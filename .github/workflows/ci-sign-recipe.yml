@@ -36,7 +36,7 @@ jobs:
       uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
         repository: Oxiom-Systems/watch-my-ai-doing
-        ref: fa245d5b78d0ca8963d41cb869faf1f93102ca59
+        ref: 94248755b42a7e71bd2af88bf40bf12632f34f14
         persist-credentials: false
         fetch-depth: 1
         path: signer
