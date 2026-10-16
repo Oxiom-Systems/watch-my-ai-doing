@@ -1,0 +1,13 @@
+{
+  "url": "https://dl.google.com/android/repository/build-tools_r36_linux.zip",
+  "sha256": "5d9ac77fb6ff43d9da518a337b4fcf8f9097113df531d99ccefe80ef7ce8250b",
+  "bytes": 63737259,
+  "version": "36.0.0",
+  "jdk": "17.0.20.1+1",
+  "members": {
+    "lib/apksigner.jar": "3716d9311e55d2b0918a2fd9d54ba9e406c5f6abeea700b287f11259bc163dec",
+    "aapt2": "1a6a396b9cd071f7040071fdd108718cb98c3c9f4960044f373b288993d19eb7",
+    "zipalign": "c5f559e946de5a9e7d58792181db20383b228877812136bc469d97ae00a43b0a",
+    "lib64/libc++.so": "96a19cd2154a4423a61f8444e5d3148a608fa3033bc1a22285d19855a950d05a"
+  }
+}
