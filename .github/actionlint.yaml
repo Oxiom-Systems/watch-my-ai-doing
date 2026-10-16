@@ -1,0 +1,4 @@
+self-hosted-runner:
+  labels:
+    - ci-linux-cpu-v1-r1317333090
+    - ci-android-signing-held
