@@ -42,4 +42,15 @@ class CodeQLContract(unittest.TestCase):
   for forbidden in ['secrets:', 'secrets.', 'inherit','pull_request_target','repository_dispatch','packages:','id-token:','--privileged','docker.sock','ubuntu-latest']:self.assertNotIn(forbidden,text)
   for action in re.findall(r'uses: (\S+)',text):self.assertRegex(action,r'@[0-9a-f]{40}$')
   self.assertEqual(len(re.findall(r'uses: github/codeql-action/',text)),2)
+
+ def test_thin_caller_immutable_pin_and_weekly_default_branch_contract(self):
+  text=(ROOT/'.github/workflows/codeql.yml').read_text()
+  self.assertIn('uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-codeql-recipe.yml@649404f67b4473213950b1622535fd1bd9e29635',text)
+  self.assertIn('cron:',text);self.assertIn("branches: [main, dev]",text)
+  self.assertIn('workflow_dispatch:',text);self.assertIn('pull_request:',text);self.assertIn('push:',text)
+  self.assertIn('upload_results: false',text)
+  for forbidden in ['secrets:', 'secrets.', 'inherit','pull_request_target','repository_dispatch','runs-on:','steps:']:self.assertNotIn(forbidden,text)
+  pin=re.search(r'uses: (\S+)',text)[1]
+  self.assertEqual(pin,'Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-codeql-recipe.yml@649404f67b4473213950b1622535fd1bd9e29635')
+
 if __name__=='__main__':unittest.main()
