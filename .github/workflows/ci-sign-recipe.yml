@@ -1,0 +1,93 @@
+name: Verified artifact-only Android signing
+'on':
+  workflow_call:
+    inputs:
+      producer_run_id:
+        required: true
+        type: string
+      producer_attempt:
+        required: true
+        type: string
+      artifact_id:
+        required: true
+        type: string
+      publish_release:
+        required: false
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+jobs:
+  sign:
+    if: github.repository_id == '1317333090' && github.ref_protected == true && github.ref == 'refs/heads/main' && github.event_name
+      == 'workflow_dispatch'
+    runs-on:
+      group: ci-publish-ephemeral
+      labels:
+      - ci-linux-publish-v1-r1317333090
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      actions: read
+    environment: production
+    steps:
+    - name: Check out only immutable reviewed signing helpers
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        repository: Oxiom-Systems/watch-my-ai-doing
+        ref: 94248755b42a7e71bd2af88bf40bf12632f34f14
+        persist-credentials: false
+        fetch-depth: 1
+        path: signer
+        sparse-checkout-cone-mode: false
+        sparse-checkout: |-
+          /.github/signing/verify_artifact.py
+          /.github/signing/bootstrap_gh.py
+          /.github/signing/bootstrap_signing.py
+          /.github/signing/signer.py
+          /.github/signing/policy.py
+          /.github/signing/BundleVerifier.java
+          /.github/signing/tools.json
+    - name: Check reviewed verifier bytes
+      run: echo '54bd08ddf7e59e755c0f21b3413699459cb837d152ff4b57716660f2ff71c7c3  signer/.github/signing/verify_artifact.py'
+        | sha256sum --check -
+    - name: Set up pinned official JDK before credentials
+      uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+      with:
+        distribution: temurin
+        java-version: 17.0.20.1+1
+    - name: Install reviewed official normal-user tools before credentials
+      run: |-
+        python3 signer/.github/signing/bootstrap_gh.py
+        python3 signer/.github/signing/bootstrap_signing.py
+    - name: Independently verify exact actual protected unsigned producer bytes
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PRODUCER_RUN_ID: ${{ inputs.producer_run_id }}
+        PRODUCER_ATTEMPT: ${{ inputs.producer_attempt }}
+        ARTIFACT_ID: ${{ inputs.artifact_id }}
+      run: python3 signer/.github/signing/policy.py verify "$PRODUCER_RUN_ID" "$PRODUCER_ATTEMPT" "$ARTIFACT_ID"
+    - name: Sign and verify four artifacts without rebuilding application code
+      env:
+        KEYSTORE_BASE64: ${{ secrets.WMAID_DEMO_KEYSTORE_BASE64 }}
+        WMAID_KEYSTORE_PASSWORD: ${{ secrets.WMAID_DEMO_KEYSTORE_PASSWORD }}
+        WMAID_KEY_ALIAS: ${{ secrets.WMAID_DEMO_KEY_ALIAS }}
+        WMAID_KEY_PASSWORD: ${{ secrets.WMAID_DEMO_KEY_PASSWORD }}
+      run: python3 signer/.github/signing/policy.py sign
+    - name: Upload four signed outputs and checksums
+      id: upload
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: wmaid-signed-apks-${{ github.run_number }}-r${{ github.run_id }}-a${{ github.run_attempt }}
+        path: ${{ runner.temp }}/wmaid-artifact-signing/signed/
+        if-no-files-found: error
+        retention-days: 14
+    - name: Publish original opt-in public prerelease assets after keys are removed
+      if: inputs.publish_release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: python3 signer/.github/signing/policy.py release
+    - name: Retain device acceptance boundary
+      run: echo "APK/AAB signing is separate from device/emulator acceptance; a distinct KVM profile remains unproven." >>
+        "$GITHUB_STEP_SUMMARY"

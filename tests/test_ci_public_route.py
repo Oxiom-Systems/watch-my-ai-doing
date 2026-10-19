@@ -53,7 +53,7 @@ class PublicBuildRouteTest(unittest.TestCase):
         self.assertIn("python -m unittest discover -s tests -p 'test_ci_public_route.py'", source)
 
     def test_caller_pins_the_own_repository_leaf_without_secret_or_ref_inputs(self):
-        source = (ROOT / '.github/workflows/manual-build.yml').read_text().split('  sign-and-publish-held:')[0]
+        source = (ROOT / '.github/workflows/manual-build.yml').read_text().split('  sign-and-publish:')[0]
         self.assertRegex(source, r'uses: Oxiom-Systems/watch-my-ai-doing/\.github/workflows/ci-build-recipe\.yml@[a-f0-9]{40}')
         for forbidden in ('secrets:', 'with:', ': write', 'pull_request_target', 'repository_dispatch'):
             self.assertNotIn(forbidden, source)
@@ -66,11 +66,12 @@ class PublicBuildRouteTest(unittest.TestCase):
         self.assertNotIn('WMAID_KEYSTORE', source)
         self.assertNotIn('connectedAndroidTest', source)
         caller = (ROOT / '.github/workflows/manual-build.yml').read_text()
-        self.assertIn('ci-android-signing-held', caller)
-        self.assertIn('timeout-minutes: 5', caller)
+        leaf=(ROOT / '.github/workflows/ci-sign-recipe.yml').read_text()
+        self.assertIn('ci-linux-publish-v1-r1317333090', leaf)
+        self.assertIn('timeout-minutes: 45', leaf)
         self.assertIn('publish_release', caller)
-        self.assertIn('gh release create', caller)
-        self.assertIn('environment: production', caller)
+        self.assertIn("'release','create'", (ROOT / '.github/signing/signer.py').read_text())
+        self.assertIn('environment: production', leaf)
         self.assertNotIn('runs-on: ubuntu-latest', caller)
 
     def test_tool_versions_and_wrapper_integrity(self):
