@@ -1,0 +1,19 @@
+name: CodeQL
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  schedule:
+    - cron: '31 3 * * 2'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+jobs:
+  analyze:
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-codeql-recipe.yml@649404f67b4473213950b1622535fd1bd9e29635
+    with:
+      # Root flips this literal only after canaries and managed-default retirement.
+      upload_results: false

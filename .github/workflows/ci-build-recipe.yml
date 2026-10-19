@@ -1,0 +1,81 @@
+name: WMAID public unsigned Android compile
+on:
+  workflow_call:
+    outputs:
+      artifact-id:
+        value: ${{ jobs.build.outputs.artifact-id }}
+      artifact-digest:
+        value: ${{ jobs.build.outputs.artifact-digest }}
+permissions:
+  contents: read
+jobs:
+  build:
+    if: >-
+      github.repository_id == '1317333090' &&
+      (
+        ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+         github.ref_protected == true &&
+         (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main')) ||
+        (github.event_name == 'pull_request' &&
+         github.event.pull_request.head.repo.id == 1317333090 &&
+         (github.base_ref == 'dev' || github.base_ref == 'main'))
+      )
+    runs-on:
+      group: ci-build-public-ephemeral
+      labels: [ci-linux-cpu-v1-r1317333090]
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Check out the event SHA without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up managed Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Test public route contracts
+        run: python -m unittest discover -s tests -p 'test_ci_public_route.py'
+      - name: Set up Java 17
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install checksum verified Android SDK
+        run: python .github/ci/setup_android_toolchain.py
+      - name: Compile unsigned phone and watch release APKs and bundles
+        run: |
+          ./gradlew --no-daemon --max-workers=2 \
+            '-Dorg.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8' \
+            -Dorg.gradle.parallel=false \
+            clean :phone:assembleRelease :wear:assembleRelease :phone:bundleRelease :wear:bundleRelease
+      - name: Prepare unsigned artifacts and per-file digests
+        run: |
+          mkdir -p dist
+          cp phone/build/outputs/apk/release/phone-release-unsigned.apk dist/WMAID-phone-unsigned.apk
+          cp wear/build/outputs/apk/release/wear-release-unsigned.apk dist/WMAID-watch-unsigned.apk
+          cp phone/build/outputs/bundle/release/phone-release.aab dist/WMAID-phone-unsigned.aab
+          cp wear/build/outputs/bundle/release/wear-release.aab dist/WMAID-watch-unsigned.aab
+          cd dist
+          sha256sum ./*.apk ./*.aab > SHA256SUMS.txt
+      - name: Upload unsigned artifacts for independent verification
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wmaid-unsigned-${{ github.sha }}-r${{ github.run_id }}-a${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record held signing and device verification
+        run: |
+          echo "Unsigned compilation only. Signing/publication awaits independent artifact verification and approval. No instrumentation suite exists in this baseline; emulator execution requires a separately proven KVM profile." >> "$GITHUB_STEP_SUMMARY"
+      - name: Measure guest disk use
+        if: always()
+        run: |
+          df -Pk . "$RUNNER_TEMP"
+          du -sk "$RUNNER_TEMP/wmaid-toolchain" "$HOME/.gradle" phone/build wear/build 2>/dev/null || true

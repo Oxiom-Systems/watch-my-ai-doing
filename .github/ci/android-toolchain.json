@@ -1,0 +1,13 @@
+{
+  "android_cli": {
+    "version": "19.0",
+    "url": "https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip",
+    "sha256": "7ec965280a073311c339e571cd5de778b9975026cfcbe79f2b1cdcb1e15317ee",
+    "compressed_bytes": 164760899
+  },
+  "sdk_packages": [
+    "platform-tools",
+    "platforms;android-36",
+    "build-tools;36.0.0"
+  ]
+}
