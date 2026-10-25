@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build:
-    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-build-recipe.yml@70b0e9c5f8b3bff898685ebddd664966d3c1732f
+    uses: Oxiom-Systems/watch-my-ai-doing/.github/workflows/ci-build-recipe.yml@1958e642fcde77604b4f8c3afe31b5a18f8fe7cf
   sign-and-publish-held:
     if: github.event_name == 'workflow_dispatch'
     permissions:
